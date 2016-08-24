@@ -68,18 +68,17 @@ if CREATE_TEST_MAT:
         sp.io.mmwrite('poisson2d_' + str(N), A)
     exit()
 
-print "pycusp benchmark..."
+print "\nStarting pymagma benchmark..."
 
 print 'cuda driver version', str(pycusp.cudart.cudaDriverGetVersion())
 print 'device number:', str(pycusp.cudart.cudaGetDevice())
 
 np.set_printoptions(suppress=False)
 
-pycusp.cusp.cuspVersion()
-magma_v = pycusp.magma.magma_version()
+magma_v = magma_version()
 print 'Magma  v%d.%d.%d' % magma_v
-pycusp.cudart.cudaDeviceReset()
-mem_free, mem_total = pycusp.cudart.cudaMemGetInfo()
+cudaDeviceReset()
+mem_free, mem_total = cudaMemGetInfo()
 print 'GPU free memory: ', float(mem_free)/float(mem_total)*100, ' %'
 
 matrix_list = []
@@ -108,7 +107,6 @@ TEST_MATRICES = True
 SCIPY    = True
 MAGMA    = True
 MAGMA_VERBOSE = True
-CUSP     = False
 
 if MAGMA:
     Magma_DEV = magma_location_t.Magma_DEV
@@ -117,20 +115,19 @@ if MAGMA:
     Magma_SELLP = magma_storage_t.Magma_SELLP
     queue = magma_queue_t()
     magma_queue_create(0, queue)
-    alpha = pycusp.cuda.cuDoubleComplex()
+    alpha = cuDoubleComplex()
     alpha.x = 1
     alpha.y = 0
-    beta = pycusp.cuda.cuDoubleComplex()
+    beta = cuDoubleComplex()
     beta.x = 0
     beta.y = 0
-    pycusp.magma.magma_init()
+    magma_init()
 
 
 if MULTIPLY:
     i = 0
     for dtype in types_list:
         duration_scipy = []
-        duration_cusp  = []
         duration_magma = []
 
         for N in resolutions:
@@ -147,26 +144,6 @@ if MULTIPLY:
                 duration_scipy.append(elapsed_time/n_solves)
             else:
                 duration_scipy.append(None)
-
-
-            if CUSP:
-                print 'Multiplying with CUSP...'
-                start_time = time.time()
-                A_d = pycusp.cusp.csr_matrix(A_csr, 'device')
-                x_d = pycusp.cusp.array1d(np.zeros((N,), dtype=dtype), 'device')
-                b_d = pycusp.cusp.array1d(np.ones((N,), dtype=dtype), 'device')
-                for j in xrange(n_solves):
-                    pycusp.cusp.multiply(A_d, b_d, x_d)
-
-                elapsed_time = time.time() - start_time
-                duration_cusp.append(elapsed_time/n_solves)
-
-                pycusp.cusp.free(A_d)
-                pycusp.cusp.free(b_d)
-                pycusp.cusp.free(x_d)
-            else:
-                duration_cusp.append(None)
-
 
             if MAGMA:
                 print 'Multiplying with Magma...'
@@ -195,7 +172,6 @@ if MULTIPLY:
         fig = plt.figure(figsize=(w,h))
         ax = fig.add_subplot( 111 )
         ax.plot(resolutions, duration_magma, linestyle = '-', color = 'k', label='magma')
-        ax.plot(resolutions, duration_cusp, linestyle = '.-', color = 'k', label='cusp')
         ax.plot(resolutions, duration_scipy, linestyle = '--', color = 'k', label='scipy')
         ax.set_xlabel( r"matrix size" )
         ax.set_ylabel( r"$t$ / s" )
@@ -206,7 +182,6 @@ if MULTIPLY:
         i += 1
 
 duration_scipy = []
-duration_cusp  = []
 duration_magma = []
 
 if BICGSTAB:
@@ -214,7 +189,6 @@ if BICGSTAB:
 
     for dtype in types_list:
         duration_scipy = []
-        duration_cusp  = []
         duration_magma = []
 
         for N in resolutions:
@@ -253,35 +227,6 @@ if BICGSTAB:
                 duration_scipy.append(elapsed_time/n_solves)
             else:
                 duration_scipy.append(None)
-
-
-            if CUSP:
-                print 'Solving with CUSP...'
-
-                A_d = pycusp.cusp.csr_matrix(A_csr, 'device')
-                b_d = pycusp.cusp.array1d(np.ones((N,), dtype=dtype), 'device')
-                monitor_d = pycusp.cusp.monitor(b_d, maxiter, tol, tol, False)
-                #P_d = pycusp.cusp.csr_matrix(sparse.csr_matrix(P_sp), 'device')
-                #P_d = pycusp.cusp.identity_operator(N,N,'device',dtype)
-                #P_d = pycusp.precond.diagonal(A_d)
-                #P_d = pycusp.precond.aggregation.smoothed_aggregation(A_d)
-                P_d = pycusp.precond.scaled_bridson_ainv(A_d, drop_tolerance = 0.1, nonzero_per_row = -1, lin_dropping = True, lin_param = 1)
-
-                start_time = time.time()
-                for _ in xrange(n_solves):
-                    x_d = pycusp.cusp.array1d(np.zeros((N,), dtype=dtype), 'device')
-                    pycusp.cusp.bicgstab(A_d, x_d, b_d, monitor_d, P_d)
-                    pycusp.cusp.free(x_d)
-
-                elapsed_time = time.time() - start_time
-                duration_cusp.append(elapsed_time/n_solves)
-
-                pycusp.cusp.free(A_d)
-                pycusp.cusp.free(b_d)
-                pycusp.cusp.free(P_d)
-                pycusp.cusp.free(monitor_d)
-            else:
-                duration_cusp.append(None)
 
             if MAGMA:
                 print 'Solving with Magma...'
@@ -344,15 +289,14 @@ if BICGSTAB:
             else:
                 duration_magma.append(None)
 
-        print '\n\nnodes \t\t duration (magma) / s \t duration (cusp) / s \t duration (scipy) / s'
+        print '\n\nnodes \t duration (magma) / s \t duration (scipy) / s'
         for j in xrange(len(resolutions)):
-            print resolutions[j]**2, ' \t\t ', duration_magma[j], ' \t ', duration_cusp[j], ' \t', duration_scipy[j]
+            print resolutions[j]**2, ' \t ', duration_magma[j], ' \t', duration_scipy[j]
 
         w, h = plt.figaspect(1.)
         fig = plt.figure(figsize=(w,h))
         ax = fig.add_subplot( 111 )
         ax.plot(resolutions, duration_magma, linestyle = '-', color = 'k', label='magma')
-        ax.plot(resolutions, duration_cusp, linestyle = '.-', color = 'k', label='cusp')
         ax.plot(resolutions, duration_scipy, linestyle = '--', color = 'k', label='scipy')
         ax.set_xlabel( r"matrix size" )
         ax.set_ylabel( r"$t$ / s" )
@@ -366,7 +310,6 @@ if BICGSTAB:
 if TEST_MATRICES:
     i = 0
     duration_scipy = []
-    duration_cusp  = []
     duration_magma = []
 
     for matrix in matrix_list:
@@ -410,36 +353,6 @@ if TEST_MATRICES:
             duration_scipy.append(elapsed_time/n_solves)
         else:
             duration_scipy.append(None)
-
-
-        if CUSP:
-            print 'Solving with CUSP...'
-
-            A_d = pycusp.cusp.csr_matrix(A_csr, 'device')
-            b_d = pycusp.cusp.array1d(b, 'device')
-            monitor_d = pycusp.cusp.monitor(b_d, maxiter, tol, tol, False)
-            #P_d = pycusp.cusp.csr_matrix(sparse.csr_matrix(P_sp), 'device')
-            #P_d = pycusp.cusp.identity_operator(N,N,'device',dtype)
-            #P_d = pycusp.precond.diagonal(A_d)
-            #P_d = pycusp.precond.aggregation.smoothed_aggregation(A_d)
-            P_d = pycusp.precond.scaled_bridson_ainv(A_d, drop_tolerance = 0.1, nonzero_per_row = -1, lin_dropping = True, lin_param = 1)
-
-            start_time = time.time()
-            for _ in xrange(n_solves):
-                x_d = pycusp.cusp.array1d(np.zeros((N,), dtype=dtype), 'device')
-                pycusp.cusp.bicgstab(A_d, x_d, b_d, monitor_d, P_d)
-                pycusp.cusp.free(x_d)
-
-            elapsed_time = time.time() - start_time
-            duration_cusp.append(elapsed_time/n_solves)
-
-            pycusp.cusp.free(A_d)
-            pycusp.cusp.free(b_d)
-            pycusp.cusp.free(P_d)
-            pycusp.cusp.free(monitor_d)
-        else:
-            duration_cusp.append(None)
-
 
         if MAGMA:
             print 'Solving with Magma...'
@@ -511,7 +424,6 @@ if TEST_MATRICES:
     fig = plt.figure(figsize=(w,h))
     ax = fig.add_subplot( 111 )
     ax.plot(x_plot, duration_magma, linestyle = '-', color = 'k', label='magma')
-    ax.plot(x_plot, duration_cusp, linestyle = '.-', color = 'k', label='cusp')
     ax.plot(x_plot, duration_scipy, linestyle = '--', color = 'k', label='scipy')
     ax.set_xlabel( r"matrix size" )
     ax.set_ylabel( r"$t$ / s" )
@@ -519,9 +431,9 @@ if TEST_MATRICES:
     plt.savefig('benchmark_bicgstab_test_matrices.pdf')
     plt.close()
 
-    print '\n\nmatrix \t\t duration (magma) / s \t duration (cusp) / s \t duration (scipy) / s'
+    print '\n\nmatrix \t duration (magma) / s \t duration (scipy) / s'
     for j in xrange(len(duration_magma)):
-        print matrix_list[j], ' \t\t ', duration_magma[j], ' \t ', duration_cusp[j], ' \t', duration_scipy[j]
+        print matrix_list[j], ' \t ', duration_magma[j], ' \t', duration_scipy[j]
 
 
 if MAGMA:

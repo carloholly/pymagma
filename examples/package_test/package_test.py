@@ -12,6 +12,8 @@ Package test script for pymagma.
 import sys, os, ctypes
 PYMAGMA_PATH = os.getenv('PYMAGMA_PATH', '')
 sys.path.append(PYMAGMA_PATH)
+import pymagma
+from pymagma import cudart
 from pymagma import *
 from scipy.sparse import *
 from scipy import *

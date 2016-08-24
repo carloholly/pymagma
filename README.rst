@@ -4,7 +4,7 @@ pymagma
 _______
 
 A Python interface to the MAGMA libraries.
-This package is developed to provide an python interface to GPU accelerated matrix and vector operations - especially the sparse-iter functions from MAGMA. It provides easy access to iterative sparse solvers on the GPU. The package currently supports MAGMA-2.0.2. It has not been tested for other versions of the MAGMA libraries. Parts of the code are taken from `scikit-cuda <https://github.com/lebedov/scikit-cuda>`_ written by `Lev Givon <http://www.columbia.edu/~lev/>`_.
+This package is developed to provide an python interface to GPU accelerated matrix and vector operations - especially the sparse-iter functions from MAGMA. It provides easy access to iterative sparse solvers on the GPU. Therefore, two classes magma_matrix and magma_vector are added. Objects of these classes can be created with a scipy sparse matrix or numpy array, respectively and the class can be used to automatically transfer the magma matrix to GPU memory space and internally call functions corresponding to the present data type (z, c, d or s). The package currently supports MAGMA-2.0.2. It has not been tested for other versions of the MAGMA libraries. Parts of the code are taken from `scikit-cuda <https://github.com/lebedov/scikit-cuda>`_ written by `Lev Givon <http://www.columbia.edu/~lev/>`_.
 
 The package is written and maintained by `Carlo Holly <https://github.com/carloholly>`_ for my research at RWTH Aachen University at the `Chair for Laser Technology <http://www.llt.rwth-aachen.de>`_.
 
