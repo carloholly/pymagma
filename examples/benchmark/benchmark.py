@@ -1,12 +1,19 @@
+#
+# Copyright (c) 2016, Carlo Holly.
+# All rights reserved.
+#
+
 #!/usr/bin/env python
 
-# Example script for pycusp
+"""
+Benchmark script for pymagma.
+"""
 
 import sys, os, time
-PYCUSP_PATH = os.getenv('PYCUSP_PATH', '')
-sys.path.append(PYCUSP_PATH)
-import pycusp
-from pycusp.magma import *
+PYMAGMA_PATH = os.getenv('PYMAGMA_PATH', '')
+sys.path.append(PYMAGMA_PATH)
+import pymagma
+from pymagma import *
 import scipy as sp
 import numpy as np
 from scipy import sparse
@@ -43,13 +50,13 @@ def poisson2d(N,dtype='d',format=None):
     offsets = np.array([0,-N,N,-1,1])
 
     diags = np.empty((5,N**2),dtype=dtype)
-    
+
     diags[0] = 4  # main diagonal
     diags[1:] = -1  # all offdiagonals
-    
+
     diags[3,N-1::N] = 0  # first lower diagonal
     diags[4,N::N] = 0  # first upper diagonal
-    
+
     return sp.sparse.dia_matrix((diags,offsets),shape=(N**2,N**2)).asformat(format)
 
 
@@ -125,7 +132,7 @@ if MULTIPLY:
         duration_scipy = []
         duration_cusp  = []
         duration_magma = []
-        
+
         for N in resolutions:
             print 'calling multiply for ', dtype, ' with matrix size ', N ,' x ', N ,'...'
             A_csr = sp.sparse.rand(N, N, density=density, format='csr', dtype=dtype)
@@ -169,10 +176,10 @@ if MULTIPLY:
                 b_d = magma_matrix(np.ones((N,), dtype=dtype), queue = queue, storage = Magma_CSR)
                 for j in xrange(n_solves):
                     magma_spmv(alpha, A_d, b_d, beta, x_d)
-        
+
                 elapsed_time = time.time() - start_time
                 duration_magma.append(elapsed_time/n_solves)
-                
+
                 free(A_d)
                 free(b_d)
                 free(x_d)
@@ -204,25 +211,25 @@ duration_magma = []
 
 if BICGSTAB:
     i = 0
-    
+
     for dtype in types_list:
         duration_scipy = []
         duration_cusp  = []
         duration_magma = []
-        
+
         for N in resolutions:
             print 'calling bicgstab for ', dtype, ' with matrix size ', N ,' x ', N ,'...'
             density_ = density / (2.0 - 1.0/N)
-            
+
             if dtype == np.complex128 or dtype == np.float64:
                 real = np.float64
             elif dtype == np.complex64 or dtype == np.float32:
                 real = np.float32
-            
+
             A_csr = sp.sparse.rand(N, N, density=density_, format='csr', dtype=real) + 1j*sp.sparse.rand(N, N, density=density_, format='csr', dtype=real) + sp.sparse.identity(N, dtype=dtype)
             A_csr = (A_csr + A_csr.transpose())/2
             A_csc = sparse.csc_matrix(A_csr)
-            
+
             if SCIPY:
                 print 'Solving with SCIPY...'
                 b  = np.ones((N,), dtype=dtype)
@@ -230,7 +237,7 @@ if BICGSTAB:
                 P_sp = spilu(A_csc, drop_tol=1e-2)
                 M = sp.sparse.linalg.LinearOperator(A_csc.shape, lambda x: P_sp.solve(x))
                 #M = None
-                
+
                 start_time = time.time()
                 for _ in xrange(n_solves):
                     x0 = np.zeros((N,), dtype=dtype)
@@ -241,16 +248,16 @@ if BICGSTAB:
                                                         tol=tol,
                                                         maxiter=maxiter)
                     print 'convergence information', info
-            
+
                 elapsed_time = time.time() - start_time
                 duration_scipy.append(elapsed_time/n_solves)
             else:
                 duration_scipy.append(None)
-                                      
-            
+
+
             if CUSP:
                 print 'Solving with CUSP...'
-                
+
                 A_d = pycusp.cusp.csr_matrix(A_csr, 'device')
                 b_d = pycusp.cusp.array1d(np.ones((N,), dtype=dtype), 'device')
                 monitor_d = pycusp.cusp.monitor(b_d, maxiter, tol, tol, False)
@@ -265,27 +272,27 @@ if BICGSTAB:
                     x_d = pycusp.cusp.array1d(np.zeros((N,), dtype=dtype), 'device')
                     pycusp.cusp.bicgstab(A_d, x_d, b_d, monitor_d, P_d)
                     pycusp.cusp.free(x_d)
-                
+
                 elapsed_time = time.time() - start_time
                 duration_cusp.append(elapsed_time/n_solves)
-                
+
                 pycusp.cusp.free(A_d)
                 pycusp.cusp.free(b_d)
                 pycusp.cusp.free(P_d)
                 pycusp.cusp.free(monitor_d)
             else:
                 duration_cusp.append(None)
-                    
+
             if MAGMA:
                 print 'Solving with Magma...'
-                
+
                 blocksize = 32
                 alignment = 1
-                
+
                 A_d = magma_matrix(A_csr, queue = queue, memory_location = Magma_DEV, storage = Magma_SELLP, blocksize = blocksize, alignment = alignment)
                 b_d = magma_matrix(queue = queue, memory_location = Magma_DEV, dtype = dtype)
                 x_d = magma_matrix(queue = queue, dtype = dtype)
-                
+
                 opts                     = magma_opts_default(dtype = dtype)
                 opts.blocksize           = blocksize
                 opts.alignment           = alignment
@@ -300,22 +307,22 @@ if BICGSTAB:
                 opts.output_format       = Magma_SELLP
                 #opts.scaling             = magma_scale_t.Magma_UNITROW
                 opts.scaling             = magma_scale_t.Magma_NOSCALE
-                
+
                 #magma_mscale(A_d, opts.scaling, queue)
-                
+
                 magma_solverinfo_init(opts.solver_par, opts.precond_par, queue)
                 magma_precondsetup(A_d, b_d, opts.solver_par, opts.precond_par, queue)
-                
+
                 #magma_mconvert(A, A_conv, A.storage, opts.output_format, queue)
                 #magma_mtransfer(A_conv, A_d, Magma_CPU, Magma_DEV, queue)
-                
+
                 if MAGMA_VERBOSE:
                     print("precond_info\n")
                     print("%%   setup  runtime\n")
                     print("  %.6f  %.6f\n" % (opts.precond_par.setuptime, opts.precond_par.runtime))
-        
+
                 magma_vinit(b_d, Magma_DEV, N, 1, 1+0j, queue)
-        
+
                 start_time = time.time()
                 for _ in xrange(n_solves):
                     #x_d = magma_matrix(np.zeros((N,), dtype=dtype), queue = queue, storage = Magma_CSR)
@@ -323,7 +330,7 @@ if BICGSTAB:
                     info = magma_solver(A_d, b_d, x_d, opts, queue)
                     if info != 0:
                         print("%%error: solver returned: %s (%d).\n" % (magma_strerror( info ), int(info)) )
-            
+
                 elapsed_time = time.time() - start_time
                 duration_magma.append(elapsed_time/n_solves)
 
@@ -361,32 +368,32 @@ if TEST_MATRICES:
     duration_scipy = []
     duration_cusp  = []
     duration_magma = []
-    
+
     for matrix in matrix_list:
         dtype = np.complex128
-        
+
         A_csr = sparse.csr_matrix(sp.io.mmread(matrix))
         A_csc = sparse.csc_matrix(A_csr)
-        
+
         M = A_csr.shape[0]
         N = A_csr.shape[1]
-        
+
         if rhs_list[i] != '':
             b = np.array(sp.io.mmread(rhs_list[i]).todense(), dtype=dtype)
         else:
             #b = np.array(np.zeros(N,), dtype=dtype)
             #b[N/2] = 1+0j
             b = np.array(np.random.rand(N,1), dtype=dtype) + 1j*np.array(np.random.rand(N,1), dtype=dtype)
-        
+
         print 'calling bicgstab for ', dtype, ' with matrix size ', A_csr.shape[0] ,' x ', A_csr.shape[0] ,'...'
-        
+
         if SCIPY:
             print 'Solving with SCIPY...'
 
             P_sp = spilu(A_csc, drop_tol=1e-2)
             M = sp.sparse.linalg.LinearOperator(A_csc.shape, lambda x: P_sp.solve(x))
             #M = None
-            
+
             start_time = time.time()
             for _ in xrange(n_solves):
                 x0 = np.zeros((N,), dtype=dtype)
@@ -398,16 +405,16 @@ if TEST_MATRICES:
                                                     maxiter=maxiter)
                                                     #callback = report)
                 solver_info(info)
-            
+
             elapsed_time = time.time() - start_time
             duration_scipy.append(elapsed_time/n_solves)
         else:
             duration_scipy.append(None)
-    
-    
+
+
         if CUSP:
             print 'Solving with CUSP...'
-            
+
             A_d = pycusp.cusp.csr_matrix(A_csr, 'device')
             b_d = pycusp.cusp.array1d(b, 'device')
             monitor_d = pycusp.cusp.monitor(b_d, maxiter, tol, tol, False)
@@ -416,16 +423,16 @@ if TEST_MATRICES:
             #P_d = pycusp.precond.diagonal(A_d)
             #P_d = pycusp.precond.aggregation.smoothed_aggregation(A_d)
             P_d = pycusp.precond.scaled_bridson_ainv(A_d, drop_tolerance = 0.1, nonzero_per_row = -1, lin_dropping = True, lin_param = 1)
-            
+
             start_time = time.time()
             for _ in xrange(n_solves):
                 x_d = pycusp.cusp.array1d(np.zeros((N,), dtype=dtype), 'device')
                 pycusp.cusp.bicgstab(A_d, x_d, b_d, monitor_d, P_d)
                 pycusp.cusp.free(x_d)
-            
+
             elapsed_time = time.time() - start_time
             duration_cusp.append(elapsed_time/n_solves)
-            
+
             pycusp.cusp.free(A_d)
             pycusp.cusp.free(b_d)
             pycusp.cusp.free(P_d)
@@ -436,15 +443,15 @@ if TEST_MATRICES:
 
         if MAGMA:
             print 'Solving with Magma...'
-        
+
             blocksize = 8
             alignment = 1
             storage = Magma_SELLP
-            
+
             A_d = magma_matrix(A_csr, queue = queue, memory_location = Magma_DEV, storage = storage, blocksize = blocksize, alignment = alignment)
             b_d = magma_matrix(b, queue = queue, memory_location = Magma_DEV)
             x_d = magma_matrix(queue = queue, dtype = dtype)
-            
+
             opts                     = magma_opts_default(dtype = dtype)
             opts.blocksize           = blocksize
             opts.alignment           = alignment
@@ -462,20 +469,20 @@ if TEST_MATRICES:
             opts.output_format       = storage
             #opts.scaling             = magma_scale_t.Magma_UNITROW
             opts.scaling             = magma_scale_t.Magma_NOSCALE
-            
+
             #magma_mscale(A_d, opts.scaling, queue)
-            
+
             magma_solverinfo_init(opts.solver_par, opts.precond_par, queue)
             magma_precondsetup(A_d, b_d, opts.solver_par, opts.precond_par, queue)
-            
+
             #magma_mconvert(A, A_conv, A.storage, opts.output_format, queue)
             #magma_mtransfer(A_conv, A_d, Magma_CPU, Magma_DEV, queue)
-            
+
             if MAGMA_VERBOSE:
                 print("precond_info\n")
                 print("%%   setup  runtime\n")
                 print("  %.6f  %.6f\n" % (opts.precond_par.setuptime, opts.precond_par.runtime))
-            
+
             start_time = time.time()
             for _ in xrange(n_solves):
                 #x_d = magma_matrix(np.zeros((N,), dtype=dtype), queue = queue, storage = Magma_CSR)
@@ -483,10 +490,10 @@ if TEST_MATRICES:
                 info = magma_solver(A_d, b_d, x_d, opts, queue)
                 if info != 0:
                     print("%%error: solver returned: %s (%d).\n" % (magma_strerror( info ), int(info)) )
-        
+
             elapsed_time = time.time() - start_time
             duration_magma.append(elapsed_time/n_solves)
-            
+
             if MAGMA_VERBOSE:
                 magma_solverinfo(opts.solver_par, opts.precond_par, queue)
 

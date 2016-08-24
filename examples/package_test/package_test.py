@@ -1,6 +1,13 @@
+#
+# Copyright (c) 2016, Carlo Holly.
+# All rights reserved.
+#
+
 #!/usr/bin/env python
 
-# Library test script for magma
+"""
+Package test script for pymagma.
+"""
 
 import sys, os, ctypes
 PYMAGMA_PATH = os.getenv('PYMAGMA_PATH', '')

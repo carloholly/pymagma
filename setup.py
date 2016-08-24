@@ -1,5 +1,7 @@
-# Copyright (c) 2016, Carlo Holly
+#
+# Copyright (c) 2016, Carlo Holly.
 # All rights reserved.
+#
 
 #!/usr/bin/env python
 
