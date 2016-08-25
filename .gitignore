@@ -44,8 +44,8 @@ pip-delete-this-directory.txt
 # Sphinx documentation
 docs/_build/
 
-# Example output directory
-#examples/
+# Examples directory
+examples/
 
 # Backup files
 *~
