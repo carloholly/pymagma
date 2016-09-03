@@ -1719,7 +1719,7 @@ _libmagma.magma_sgebrd.argtypes = [ctypes.c_int,
                                    ctypes.c_void_p]
 def magma_sgebrd(m, n, A, lda, d, e, tauq, taup, work, lwork, info):
     """
-        Reduce matrix to bidiagonal form.
+    Reduce matrix to bidiagonal form.
     """
 
     status = _libmagma.magma_sgebrd.argtypes(m, n, int(A), lda,
@@ -3398,7 +3398,7 @@ def free(A):
         elif A.dtype == np.float32:
             magma_smfree(A.magma_t_matrix, A.queue)
         else:
-            warn('free: Type not supported.')
+            raise ValueError('free: Type not supported.')
 
 
 def magma_free(A):
@@ -3424,7 +3424,7 @@ def magma_csrset(m, n, indptr, indices, val, A):
     elif val.dtype == np.float32:
         magma_scsrset(m, n, indptr, indices, val, A.magma_t_matrix, A.queue)
     else:
-        warn('magma_csrset: Type not supported.')
+        raise ValueError('magma_csrset: Type not supported.')
 
 
 # TODO:
@@ -3449,7 +3449,7 @@ def magma_solver(A, b, x, opts):
     elif A.dtype == np.float32:
         return magma_s_solver(A.magma_t_matrix, b.magma_t_matrix, x.magma_t_matrix, opts, A.queue)
     else:
-        warn('magma_solver: Type not supported.')
+        raise ValueError('magma_solver: Type not supported.')
 
 
 def magma_precondsetup(A, b, solver, precond):
@@ -3470,7 +3470,7 @@ def magma_precondsetup(A, b, solver, precond):
     elif A.dtype == np.float32:
         magma_s_precondsetup(A.magma_t_matrix, b.magma_t_matrix, solver, precond, A.queue)
     else:
-        warn('magma_precondsetup: Type not supported.')
+        raise ValueError('magma_precondsetup: Type not supported.')
 
 
 def magma_solverinfo(solver_par, precond_par, queue):
@@ -3489,7 +3489,7 @@ def magma_solverinfo(solver_par, precond_par, queue):
     elif isinstance(solver_par, magma_s_solver_par):
         magma_ssolverinfo(solver_par, precond_par, queue)
     else:
-        warn('magma_solverinfo: Type not supported.')
+        raise ValueError('magma_solverinfo: Type not supported.')
 
 
 def magma_solverinfo_init(solver_par, precond, queue):
@@ -3508,7 +3508,7 @@ def magma_solverinfo_init(solver_par, precond, queue):
     elif isinstance(solver_par, magma_s_solver_par):
         magma_ssolverinfo_init(solver_par, precond, queue)
     else:
-        warn('magma_solverinfo_init: Type not supported.')
+        raise ValueError('magma_solverinfo_init: Type not supported.')
 
 
 def magma_solverinfo_free(solver_par, precond, queue):
@@ -3527,7 +3527,7 @@ def magma_solverinfo_free(solver_par, precond, queue):
     elif isinstance(solver_par, magma_s_solver_par):
         magma_ssolverinfo_free(solver_par, precond, queue)
     else:
-        warn('magma_solverinfo_free: Type not supported.')
+        raise ValueError('magma_solverinfo_free: Type not supported.')
 
 
 def magma_opts_default(dtype = np.complex128):
@@ -3540,7 +3540,7 @@ def magma_opts_default(dtype = np.complex128):
     elif dtype == np.float32:
         return magma_sopts_default()
     else:
-        warn('magma_opts_default: Type not supported.')
+        raise ValueError('magma_opts_default: Type not supported.')
 
 
 def magma_mconvert(A, B, old_format, new_format):
@@ -3561,7 +3561,7 @@ def magma_mconvert(A, B, old_format, new_format):
     elif A.dtype == np.float32:
         magma_smconvert(A.magma_t_matrix, B.magma_t_matrix, old_format, new_format, A.queue)
     else:
-        warn('magma_mconvert: Type not supported.')
+        raise ValueError('magma_mconvert: Type not supported.')
 
 
 def magma_mscale(A, scaling):
@@ -3579,7 +3579,7 @@ def magma_mscale(A, scaling):
     elif A.dtype == np.float32:
         magma_smscale(A.magma_t_matrix, scaling, A.queue)
     else:
-        warn('magma_mscale: Type not supported.')
+        raise ValueError('magma_mscale: Type not supported.')
 
 
 def magma_mtransfer(A, B, src, dst):
@@ -3600,7 +3600,7 @@ def magma_mtransfer(A, B, src, dst):
     elif A.dtype == np.float32:
         magma_smtransfer(A.magma_t_matrix, B.magma_t_matrix, src, dst, A.queue)
     else:
-        warn('magma_mtransfer: Type not supported.')
+        raise ValueError('magma_mtransfer: Type not supported.')
 
 
 def magma_spmv(alpha, A, x, beta, y):
@@ -3642,7 +3642,7 @@ def magma_spmv(alpha, A, x, beta, y):
     elif A.dtype == np.float32:
         magma_s_spmv(alpha, A.magma_t_matrix, x.magma_t_matrix, beta, y.magma_t_matrix, A.queue)
     else:
-        warn('magma_spmv: Type not supported.')
+        raise ValueError('magma_spmv: Type not supported.')
 
 
 def magma_vget(v):
@@ -3660,7 +3660,7 @@ def magma_vget(v):
     elif v.dtype == np.float32:
         return magma_svget(v.magma_t_matrix, v.queue)
     else:
-        warn('magma_vget: Type not supported.')
+        raise ValueError('magma_vget: Type not supported.')
 
 
 def magma_vcopy(n, x, incx, y, incy):
@@ -3681,7 +3681,7 @@ def magma_vcopy(n, x, incx, y, incy):
     elif x.dtype == np.float32:
         magma_scopy( n, x.magma_t_matrix.dval, incx, y.magma_t_matrix.dval, incy)
     else:
-        warn('magma_vcopy: Type not supported.')
+        raise ValueError('magma_vcopy: Type not supported.')
 
 
 def magma_vinit(x, memory_location, num_rows, num_cols, values):
@@ -3711,7 +3711,7 @@ def magma_vinit(x, memory_location, num_rows, num_cols, values):
     elif x.dtype == np.float32:
         magma_svinit(x.magma_t_matrix, memory_location, num_rows, num_cols, values, x.queue)
     else:
-        warn('magma_vinit: Type not supported.')
+        raise ValueError('magma_vinit: Type not supported.')
 
 
 class magma_matrix:
@@ -3758,7 +3758,7 @@ class magma_matrix:
                     magma_svset(A.size, 1, A, A_CPU, queue)
                     magma_smtransfer(A_CPU, self.magma_t_matrix, magma_location_t.Magma_CPU, memory_location, self.queue)
                 else:
-                    warn('__init__: Type not supported.')
+                    raise ValueError('__init__: Type not supported.')
 
             else:
                 A_CONV = magma_t_matrix(self.storage)
@@ -3783,7 +3783,7 @@ class magma_matrix:
                     magma_smconvert(A_CPU, A_CONV, magma_storage_t.Magma_CSR, self.storage, self.queue)
                     magma_smtransfer(A_CONV, self.magma_t_matrix, magma_location_t.Magma_CPU, memory_location, self.queue)
                 else:
-                    warn('__init__: Type not supported.')
+                    raise ValueError('__init__: Type not supported.')
 
 
     def get_data(self):
@@ -3804,7 +3804,7 @@ class magma_matrix:
             magma_smtransfer(self.magma_t_matrix, A, magma_location_t.Magma_DEV, magma_location_t.Magma_CPU, self.queue)
             m, n, val = magma_svget(A, self.queue)
         else:
-            warn('get_data: Type not supported.')
+            raise ValueError('get_data: Type not supported.')
 
         return val
 
@@ -3821,9 +3821,9 @@ class magma_vector:
                 self.pointer = cuda.cudaMalloc(self.nbytes)
                 cuda.cudaMemcpy_htod(self.pointer, A.ctypes.data_as(ctypes.c_void_p) , self.nbytes)
             else:
-                warn('magma_vector: not implemented.')
+                raise ValueError('magma_vector: not implemented.')
         else:
-            warn('magma_vector: Type not supported for construction.')
+            raise ValueError('magma_vector: Type not supported for construction.')
 
     def to_ndarray(self):
         a = np.zeros((self.size,), dtype = self.dtype)
